@@ -2,7 +2,7 @@ package xcx
 
 import (
 	"fmt"
-	"wxsdk"
+	"github.com/whileW/wxsdk"
 )
 
 const (

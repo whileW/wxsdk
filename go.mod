@@ -1,4 +1,4 @@
-module wxsdk
+module github.com/whileW/wxsdk
 
 go 1.13
 
