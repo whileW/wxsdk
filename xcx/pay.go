@@ -21,6 +21,7 @@ type UnifiedorderReqStruct struct {
 	NonceStr		string			`xml:"nonce_str"`			//随机字符串--32位
 	NotifyUrl		string			`xml:"notify_url"`			//通知地址
 	OutTradeNo		string			`xml:"out_trade_no"`		//订单号
+	Openid			string			`xml:"openid"`				//openid
 	Sign			string			`xml:"sign"`			//签名
 	SpbillCreateIp	string			`xml:"spbill_create_ip"`		//终端ip
 	TotalFee		int				`xml:"total_fee"`			//订单金额	单位：分
@@ -33,7 +34,7 @@ type UnifiedorderRespStruct struct {
 	wxsdk.WXXmlError
 }
 
-func Unifiedorder(body string,total int,ip string,notify_url string,trade_type string) (string,error) {
+func Unifiedorder(body string,total int,ip string,notify_url string,trade_type string,openid string) (string,error) {
 	reqStruct := &UnifiedorderReqStruct{
 		Appid:wxsdk.AppId,
 		MchId:wxsdk.MchId,
@@ -44,6 +45,7 @@ func Unifiedorder(body string,total int,ip string,notify_url string,trade_type s
 		SpbillCreateIp:ip,
 		NotifyUrl:notify_url,
 		TradeType:trade_type,
+		Openid:openid,
 	}
 	reqStruct.Sign = getSign(reqStruct)
 	req,err := xml.Marshal(reqStruct)
@@ -62,9 +64,10 @@ func Unifiedorder(body string,total int,ip string,notify_url string,trade_type s
 	return reqStruct.OutTradeNo, err
 }
 func getSign(req *UnifiedorderReqStruct) string {
-	str := fmt.Sprintf("appid=%s&body=%s&mch_id=%s&nonce_str=%s&notify_url=%s&out_trade_no=%s&" +
-		"spbill_create_ip=%s&total_fee=%d&trade_type=%s&key=%s",req.Appid,req.Body,req.MchId,req.NonceStr,
-		req.NotifyUrl,req.OutTradeNo,req.SpbillCreateIp,req.TotalFee,req.TradeType,wxsdk.MchKey)
+	str := fmt.Sprintf("appid=%s&body=%s&mch_id=%s&nonce_str=%s&notify_url=%s&" +
+		"openid=%s&out_trade_no=%s&spbill_create_ip=%s&total_fee=%d&trade_type=%s&key=%s",
+		req.Appid,req.Body,req.MchId,req.NonceStr,
+		req.NotifyUrl,req.Openid,req.OutTradeNo,req.SpbillCreateIp,req.TotalFee,req.TradeType,wxsdk.MchKey)
 	md5str := encryption.Md5V(str)
 	return wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
 }
