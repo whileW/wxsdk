@@ -25,8 +25,8 @@ func (e *WXError) Error() string {
 }
 
 type WXXmlError struct {
-	ReturnCode string    `json:"return_code"`
-	ReturnMsg  string 	`json:"return_msg"`
+	ReturnCode string    	`xml:"return_code"`
+	ReturnMsg  string 		`xml:"return_msg"`
 }
 
 func (e *WXXmlError) error() error {

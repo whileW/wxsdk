@@ -3,7 +3,10 @@ package wxsdk
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 )
@@ -117,4 +120,15 @@ func GetWxUserPhone(sessionKey,encryptedData, iv string)  (*Phone,error) {
 		return nil, ErrAppIDNotMatch
 	}
 	return phone, nil
+}
+func ComputeHmacSha256(message string, secret string) string {
+	key := []byte(secret)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(message))
+	//	fmt.Println(h.Sum(nil))
+	sha := hex.EncodeToString(h.Sum(nil))
+	//	fmt.Println(sha)
+
+	//	hex.EncodeToString(h.Sum(nil))
+	return base64.StdEncoding.EncodeToString([]byte(sha))
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -51,16 +52,9 @@ func Post(url string, v interface{}, wxr wxResp) (err error) {
 }
 
 // Post HTTP 工具类, POST 并解析返回的报文，如果有错误，返回 error
-func PostXml(url string, v interface{}, wxr wxResp) (err error) {
-	var js []byte
-	if _, ok := v.([]byte); !ok {
-		js, err = json.Marshal(v)
-		if err != nil {
-			return err
-		}
-	}
-
-	resp, err := client.Post(url, contentType, bytes.NewBuffer(js))
+func PostXml(url string, v []byte, wxr wxResp) (err error) {
+	fmt.Println(string(v))
+	resp, err := client.Post(url, contentType, bytes.NewBuffer(v))
 	if err != nil {
 		return err
 	}
@@ -137,14 +131,15 @@ func parseWXResp(resp *http.Response, wxr wxResp) error {
 }
 func parseWXXmlResp(resp *http.Response, wxr wxResp) error {
 	js, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(js))
 	resp.Body.Close()
 	if err != nil {
 		return err
 	}
 
-	log.ZlLoggor.Error("%s", js)
+	//log.ZlLoggor.Error("%s", js)
 	if wxr == nil {
-		wxr = &WXError{}
+		wxr = &WXXmlError{}
 	}
 	err = xml.Unmarshal(js, wxr)
 	if err != nil {
