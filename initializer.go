@@ -9,6 +9,7 @@ import (
 var (
 	AppId          string // 应用ID
 	AppSecret      string // 应用密钥
+	MchId			string	//商户号
 )
 
 // Initialize 配置并初始化

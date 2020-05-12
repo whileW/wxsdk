@@ -2,39 +2,18 @@ package wxsdk
 
 import (
 	"bytes"
+	"code.aliyun.com/sxs/utils/log"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"code.aliyun.com/sxs/utils/log"
 )
 
-type wxResp interface {
-	// 似有的 error 方法，保证外部(其他包)定义的 struct 只能内嵌
-	// WXError 的才能实现这个方法，才能作为当前包 http 方法的参数
-	error() error
-}
-
-type WXError struct {
-	ErrCode int    `json:"errcode,omitempty"`
-	Errmsg  string `json:"errmsg,omitempty"`
-}
-
-func (e *WXError) error() error {
-	if e.ErrCode == 0 {
-		return nil
-	}
-	return e
-}
-
-func (e *WXError) Error() string {
-	return fmt.Sprintf("weixin: (%d)%s", e.ErrCode, e.Errmsg)
-}
 
 var client = http.Client{
 	Transport: &http.Transport{
@@ -69,6 +48,23 @@ func Post(url string, v interface{}, wxr wxResp) (err error) {
 		return err
 	}
 	return parseWXResp(resp, wxr)
+}
+
+// Post HTTP 工具类, POST 并解析返回的报文，如果有错误，返回 error
+func PostXml(url string, v interface{}, wxr wxResp) (err error) {
+	var js []byte
+	if _, ok := v.([]byte); !ok {
+		js, err = json.Marshal(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	resp, err := client.Post(url, contentType, bytes.NewBuffer(js))
+	if err != nil {
+		return err
+	}
+	return parseWXXmlResp(resp, wxr)
 }
 
 // Upload 工具类, 上传文件
@@ -133,6 +129,24 @@ func parseWXResp(resp *http.Response, wxr wxResp) error {
 		wxr = &WXError{}
 	}
 	err = json.Unmarshal(js, wxr)
+	if err != nil {
+		return err
+	}
+
+	return wxr.error()
+}
+func parseWXXmlResp(resp *http.Response, wxr wxResp) error {
+	js, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return err
+	}
+
+	log.ZlLoggor.Error("%s", js)
+	if wxr == nil {
+		wxr = &WXError{}
+	}
+	err = xml.Unmarshal(js, wxr)
 	if err != nil {
 		return err
 	}
