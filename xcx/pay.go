@@ -2,19 +2,19 @@ package xcx
 
 import (
 	"code.aliyun.com/sxs/utils/encryption"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"github.com/satori/go.uuid"
 	"github.com/whileW/wxsdk"
 	"strings"
+	xml2 "encoding/xml"
 )
 
 const (
 	unifiedorder = "https://api.mch.weixin.qq.com/pay/unifiedorder"
 )
 
-type UnifiedorderReqStruct struct {
+type xml struct {
 	Appid			string			`xml:"appid"`			//小程序id
 	Body			string 			`xml:"body"`			//商品描述
 	MchId			string			`xml:"mch_id"`			//商户号
@@ -31,16 +31,18 @@ type UnifiedorderRespStruct struct {
 	ResultCode			string			`xml:"result_code"`
 	ErrCode				string			`xml:"err_code"`
 	ErrCodeDes			string			`xml:"err_code_des"`
+	PrepayId			string			`xml:"prepay_id"`			//统一下单返回id
 	wxsdk.WXXmlError
 }
 
-func Unifiedorder(body string,total int,ip string,notify_url string,trade_type string,openid string) (string,error) {
-	reqStruct := &UnifiedorderReqStruct{
+func Unifiedorder(order_id string,body string,total int,ip string,notify_url string,
+	trade_type string,openid string) (string,error) {
+	reqStruct := &xml{
 		Appid:wxsdk.AppId,
 		MchId:wxsdk.MchId,
 		NonceStr:strings.Replace(uuid.NewV1().String(),"-","",-1),
 		Body:body,
-		OutTradeNo:strings.Replace(uuid.NewV1().String(),"-","",-1),
+		OutTradeNo:order_id,
 		TotalFee:total,
 		SpbillCreateIp:ip,
 		NotifyUrl:notify_url,
@@ -48,7 +50,7 @@ func Unifiedorder(body string,total int,ip string,notify_url string,trade_type s
 		Openid:openid,
 	}
 	reqStruct.Sign = getSign(reqStruct)
-	req,err := xml.Marshal(reqStruct)
+	req,err := xml2.Marshal(reqStruct)
 	if err != nil {
 		return "",err
 	}
@@ -61,13 +63,14 @@ func Unifiedorder(body string,total int,ip string,notify_url string,trade_type s
 			return "",errors.New(fmt.Sprintf("weixin: (%s)%s", resp.ErrCode, resp.ErrCodeDes))
 		}
 	}
-	return reqStruct.OutTradeNo, err
+	return resp.PrepayId, err
 }
-func getSign(req *UnifiedorderReqStruct) string {
+func getSign(req *xml) string {
 	str := fmt.Sprintf("appid=%s&body=%s&mch_id=%s&nonce_str=%s&notify_url=%s&" +
 		"openid=%s&out_trade_no=%s&spbill_create_ip=%s&total_fee=%d&trade_type=%s&key=%s",
 		req.Appid,req.Body,req.MchId,req.NonceStr,
 		req.NotifyUrl,req.Openid,req.OutTradeNo,req.SpbillCreateIp,req.TotalFee,req.TradeType,wxsdk.MchKey)
 	md5str := encryption.Md5V(str)
-	return wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
+	//wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
+	return strings.ToLower(md5str)
 }
