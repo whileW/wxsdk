@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/satori/go.uuid"
 	"github.com/whileW/wxsdk"
+	"strconv"
 	"strings"
 	xml2 "encoding/xml"
+	"time"
 )
 
 const (
@@ -27,16 +29,21 @@ type xml struct {
 	TotalFee		int				`xml:"total_fee"`			//订单金额	单位：分
 	TradeType		string			`xml:"trade_type"`			//交易类型
 }
-type UnifiedorderRespStruct struct {
+type UnifiedorderWxRespStruct struct {
 	ResultCode			string			`xml:"result_code"`
 	ErrCode				string			`xml:"err_code"`
 	ErrCodeDes			string			`xml:"err_code_des"`
 	PrepayId			string			`xml:"prepay_id"`			//统一下单返回id
 	wxsdk.WXXmlError
 }
-
+type UnifiedorderRespStruct struct {
+	NonceStr		string			`json:"nonce_str"`		//随机字符串--32位
+	Sign			string			`json:"sign"`			//签名
+	PrepayId		string			`json:"prepay_id"`		//prepay_id
+	TimeStamp		string			`json:"time_stamp"`		//时间挫
+}
 func Unifiedorder(order_id string,body string,total int,ip string,notify_url string,
-	trade_type string,openid string) (string,error) {
+	trade_type string,openid string) (*UnifiedorderRespStruct,error) {
 	reqStruct := &xml{
 		Appid:wxsdk.AppId,
 		MchId:wxsdk.MchId,
@@ -52,18 +59,19 @@ func Unifiedorder(order_id string,body string,total int,ip string,notify_url str
 	reqStruct.Sign = getSign(reqStruct)
 	req,err := xml2.Marshal(reqStruct)
 	if err != nil {
-		return "",err
+		return nil,err
 	}
-	resp := &UnifiedorderRespStruct{}
+	resp := &UnifiedorderWxRespStruct{}
 	err = wxsdk.PostXml(unifiedorder,req, resp)
 	if err != nil {
-		return "",err
+		return nil,err
 	}else {
 		if resp.ResultCode != "SUCCESS" {
-			return "",errors.New(fmt.Sprintf("weixin: (%s)%s", resp.ErrCode, resp.ErrCodeDes))
+			return nil,errors.New(fmt.Sprintf("weixin: (%s)%s", resp.ErrCode, resp.ErrCodeDes))
 		}
 	}
-	return resp.PrepayId, err
+	return &UnifiedorderRespStruct{PrepayId:resp.PrepayId,NonceStr:reqStruct.NonceStr,
+		Sign:reqStruct.Sign,TimeStamp:strconv.FormatInt(time.Now().Unix(),10)}, err
 }
 func getSign(req *xml) string {
 	str := fmt.Sprintf("appid=%s&body=%s&mch_id=%s&nonce_str=%s&notify_url=%s&" +
