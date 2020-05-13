@@ -84,7 +84,7 @@ func getServerSign(req *xml) string {
 		req.NotifyUrl,req.Openid,req.OutTradeNo,req.SpbillCreateIp,req.TotalFee,req.TradeType,wxsdk.MchKey)
 	md5str := encryption.Md5V(str)
 	//wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
-	return strings.ToLower(md5str)
+	return strings.ToUpper(md5str)
 }
 func getXcxSign(resp *UnifiedorderRespStruct) string {
 	str := fmt.Sprintf("appid=%s&nonceStr=%s&package=%s&signType=%s&timeStamp=%s&key=%s",
