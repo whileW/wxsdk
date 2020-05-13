@@ -91,5 +91,5 @@ func getXcxSign(resp *UnifiedorderRespStruct) string {
 		wxsdk.AppId,resp.NonceStr,resp.Package,"MD5",resp.TimeStamp,wxsdk.MchKey)
 	md5str := encryption.Md5V(str)
 	//wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
-	return strings.ToLower(md5str)
+	return strings.ToUpper(md5str)
 }
