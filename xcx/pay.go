@@ -57,6 +57,7 @@ func Unifiedorder(order_id string,body string,total int,ip string,notify_url str
 		Openid:openid,
 	}
 	reqStruct.Sign = getServerSign(reqStruct)
+	fmt.Println(reqStruct.Sign+"---reqStruct")
 	req,err := xml2.Marshal(reqStruct)
 	if err != nil {
 		return nil,err
@@ -73,6 +74,7 @@ func Unifiedorder(order_id string,body string,total int,ip string,notify_url str
 	respStruct := &UnifiedorderRespStruct{Package:"prepay_id="+resp.PrepayId,NonceStr:reqStruct.NonceStr,
 		TimeStamp:strconv.FormatInt(time.Now().Unix(),10)}
 	respStruct.Sign = getXcxSign(respStruct)
+	fmt.Println(respStruct.Sign+"---respStruct")
 	return respStruct, err
 }
 func getServerSign(req *xml) string {
