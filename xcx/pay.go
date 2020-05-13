@@ -39,7 +39,7 @@ type UnifiedorderWxRespStruct struct {
 type UnifiedorderRespStruct struct {
 	NonceStr		string			`json:"nonce_str"`		//随机字符串--32位
 	Sign			string			`json:"sign"`			//签名
-	PrepayId		string			`json:"prepay_id"`		//prepay_id
+	Package			string			`json:"package"`		//
 	TimeStamp		string			`json:"time_stamp"`		//时间挫
 }
 func Unifiedorder(order_id string,body string,total int,ip string,notify_url string,
@@ -56,7 +56,7 @@ func Unifiedorder(order_id string,body string,total int,ip string,notify_url str
 		TradeType:trade_type,
 		Openid:openid,
 	}
-	reqStruct.Sign = getSign(reqStruct)
+	reqStruct.Sign = getServerSign(reqStruct)
 	req,err := xml2.Marshal(reqStruct)
 	if err != nil {
 		return nil,err
@@ -70,14 +70,23 @@ func Unifiedorder(order_id string,body string,total int,ip string,notify_url str
 			return nil,errors.New(fmt.Sprintf("weixin: (%s)%s", resp.ErrCode, resp.ErrCodeDes))
 		}
 	}
-	return &UnifiedorderRespStruct{PrepayId:resp.PrepayId,NonceStr:reqStruct.NonceStr,
-		Sign:reqStruct.Sign,TimeStamp:strconv.FormatInt(time.Now().Unix(),10)}, err
+	respStruct := &UnifiedorderRespStruct{Package:"prepay_id="+resp.PrepayId,NonceStr:reqStruct.NonceStr,
+		TimeStamp:strconv.FormatInt(time.Now().Unix(),10)}
+	respStruct.Sign = getXcxSign(respStruct)
+	return respStruct, err
 }
-func getSign(req *xml) string {
+func getServerSign(req *xml) string {
 	str := fmt.Sprintf("appid=%s&body=%s&mch_id=%s&nonce_str=%s&notify_url=%s&" +
 		"openid=%s&out_trade_no=%s&spbill_create_ip=%s&total_fee=%d&trade_type=%s&key=%s",
 		req.Appid,req.Body,req.MchId,req.NonceStr,
 		req.NotifyUrl,req.Openid,req.OutTradeNo,req.SpbillCreateIp,req.TotalFee,req.TradeType,wxsdk.MchKey)
+	md5str := encryption.Md5V(str)
+	//wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
+	return strings.ToLower(md5str)
+}
+func getXcxSign(resp *UnifiedorderRespStruct) string {
+	str := fmt.Sprintf("appid=%s&nonceStr=%s&package=%s&signType=%s&timeStamp=%s&key=%s",
+		wxsdk.AppId,resp.NonceStr,resp.Package,"MD5",resp.TimeStamp,wxsdk.MchKey)
 	md5str := encryption.Md5V(str)
 	//wxsdk.ComputeHmacSha256(md5str,wxsdk.MchKey)
 	return strings.ToLower(md5str)
